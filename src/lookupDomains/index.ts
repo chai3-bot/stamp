@@ -22,10 +22,6 @@ export default async function lookupDomains(
   let chainIds = Array.isArray(chains) ? chains : [chains];
   chainIds = [...new Set(chainIds.map(String))];
 
-  // The address shape is now guaranteed by the branded Address type: the only
-  // caller (src/api.ts lookup_domains) validates it with lookupDomainsSchema at
-  // the boundary, so the previous runtime isAddress guard is redundant.
-
   RESOLVERS.forEach(resolver => {
     chainIds.forEach(chain => {
       promises.push(resolver(address, chain));
