@@ -1,6 +1,4 @@
-import { capture } from '@snapshot-labs/snapshot-sentry';
 import constants from '../../constants.json';
-import { isSilencedError } from '../../helpers/errors';
 import { graphQlCall } from '../../helpers/graphql';
 import { Address, Handle } from '../../helpers/types';
 
@@ -55,35 +53,6 @@ async function fetchDomainNames(domains: Domain[], chainId: string): Promise<Han
   );
 }
 
-async function fetchV2Domains(address: Address, chainId: string): Promise<Domain[]> {
-  const endpoint = constants.ensV2Graphql[chainId];
-
-  if (!endpoint) return [];
-
-  try {
-    const { data } = await graphQlCall<{ domains: Domain[] }>(
-      endpoint,
-      `query Domains($where: DomainFilter!, $first: Int) {
-        domains(where: $where, first: $first) {
-          name
-          expiryDate
-        }
-      }`,
-      {
-        where: { owner: address.toLowerCase() },
-        first: DOMAINS_PAGE_SIZE
-      }
-    );
-
-    return data.domains || [];
-  } catch (err) {
-    if (!isSilencedError(err)) {
-      capture(err, { contexts: { input: { address, chainId } } });
-    }
-    return [];
-  }
-}
-
 export default async function lookupDomains(
   address: Address,
   chainId = DEFAULT_CHAIN_ID
@@ -112,8 +81,7 @@ export default async function lookupDomains(
   const now = Date.now() / 1000;
   const domains: Domain[] = [
     ...(account?.domains || []),
-    ...(account?.wrappedDomains || []),
-    ...(await fetchV2Domains(address, chainId))
+    ...(account?.wrappedDomains || [])
   ].filter(domain => {
     const expiry = Number(domain.expiryDate ?? 0);
 
